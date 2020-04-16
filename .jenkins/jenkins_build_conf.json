@@ -1,0 +1,27 @@
+{
+    "bionic": {},
+
+    "__defaults__": {
+        "project": "rtbrick-libpam-tacplus",
+        "version_mmr": {"major": 1, "minor": 4, "rev": 0, "label": "", "meta": ""},
+
+	"containers": [
+		{
+			"name": "builder",
+			"image": "docker.rtbrick.net/devops/images/rtbrick/ubuntu-bionic-builder:latest",
+			"deps": [ ],
+			"build_cmd": ".jenkins/jenkins_build_run_make.sh"
+		}
+	],
+
+        "pkg_cmd": ".jenkins/jenkins_package_create_deb.sh",
+	"pkg_cont": "builder",
+        "pkg_name": "rtbrick-libpam-tacplus",
+        "pkg_descr": "RtBrick fork of pam_tacplus: extended for full tacacs client solution",
+        "pkg_group": "rtbrick-rbfs",
+        "pkg_deps": [],
+	"pkg_services": [ ],
+
+        "upload_cmd": ".jenkins/jenkins_upload_to_latest_ubuntu_rtbrick-rbfs_bionic_rtbrick-rbfs.sh"
+    }
+}
