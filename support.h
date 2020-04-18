@@ -51,6 +51,7 @@ void _pam_get_terminal(pam_handle_t *, char **);
 void _pam_get_rhost(pam_handle_t *, char **);
 void _reset_saved_user(int);
 void update_mapped(pam_handle_t *, char *, unsigned, char *);
+void pam_create_rtb_token(pam_handle_t *pamh);
 
 #endif  /* PAM_TACPLUS_SUPPORT_H */
 
