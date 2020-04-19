@@ -39,10 +39,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <cjose/jws.h>
-#include <cjose/header.h>
-#include <time.h>
-#include <json-builder.h>
 
 tacplus_server_t tac_srv[TAC_PLUS_MAXSERVERS];
 extern tacplus_server_t active_server;
@@ -441,7 +437,7 @@ void update_mapped(pam_handle_t *pamh, char *user, unsigned level, char *rhost)
     struct sigaction newsa, oldsa;
     const char *path = "/sbin/mkhomedir_helper";
 
-    if (!update_mapuser(pamh, user, level, rhost, tac_use_tachome))
+    if (!update_mapuser(user, level, rhost, user, tac_use_tachome))
         return;
 
     /*

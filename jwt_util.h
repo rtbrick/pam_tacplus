@@ -6,6 +6,7 @@
 
 #define JWT_DEFINITION_FILE    "/var/rtbrick/auth/jwt_claims.json" 
 #define JWT_SECRET_FILE        "/var/rtbrick/auth/secrets_jwks.json" 
+#define LOGIN_USERNAME_LEN     100
 
 char* jwt_create_token(pam_handle_t *pamh);
 

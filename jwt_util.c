@@ -1,3 +1,7 @@
+#include "pam_tacplus.h"
+#include "support.h"
+#include "jwt_util.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <json-parser/json.h>
@@ -10,13 +14,12 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "jwt_util.h"
 
 /* For secure-management. This pointer caches JWK*/
 static char *g_cmd_secret_jwk = NULL;
 
 json_value*
-jwk_parse_file (const char *file_name)
+jwt_parse_file (const char *file_name)
 {
     FILE *fp;
     struct stat filestatus;
@@ -29,7 +32,7 @@ jwk_parse_file (const char *file_name)
 
     if (stat(file_name, &filestatus) != 0) {
         _pam_log(LOG_ERR, "JSON file not found %s: file: %s,function: %s, line: %ld",
-                                    filename, __FILE__, __FUNCTION__, __LINE__);
+                                    file_name, __FILE__, __FUNCTION__, __LINE__);
         return NULL;
     }
     file_size = filestatus.st_size;
@@ -81,7 +84,7 @@ get_secret_jwks(const char *key_filename)
     char       *secret = NULL;
 
     if(!g_cmd_secret_jwk) {
-        file_json = cmd_jwk_parse_file(key_filename);
+        file_json = jwt_parse_file(key_filename);
         if(!file_json) {
             return NULL;
         }
@@ -154,34 +157,16 @@ void jwt_set_header(cjose_header_t *hdr, json_value* value)
             switch((value->u.object.values[x].value)->type) 
             {
                 case json_none:
-                        break;
                 case json_integer:
-                        if(!cjose_header_set(hdr, value->u.object.values[x].name, (value->u.object.values[x].value)->u.integer, &err))
-                        {
-                            _pam_log(LOG_ERR, "Failed to set header attribute %s: file: %s,function: %s, line: %ld",
-                                    value->u.object.values[x].name,__FILE__, __FUNCTION__, __LINE__);
-                        }
-                        break;
                 case json_object:
-                case json_array:
-                        _pam_log(LOG_ERR, "Invalid claim: file: %s,function: %s, line: %ld", __FILE__, __FUNCTION__, __LINE__);
-                        break;
                 case json_double:
-                        if(!cjose_header_set(hdr, value->u.object.values[x].name, (value->u.object.values[x].value)->u.dbl, &err))
-                        {
-                            _pam_log(LOG_ERR, "Failed to set header attribute %s: file: %s,function: %s, line: %ld",
-                                    value->u.object.values[x].name,__FILE__, __FUNCTION__, __LINE__);
-                        }
+                case json_array:
+                case json_boolean:
+                        _pam_log(LOG_ERR, "Invalid claim, header supports only string type file: %s,function: %s, line: %ld",
+                                                    __FILE__, __FUNCTION__, __LINE__);
                         break;
                 case json_string:
                         if(!cjose_header_set(hdr, value->u.object.values[x].name, (value->u.object.values[x].value)->u.string.ptr, &err))
-                        {
-                            _pam_log(LOG_ERR, "Failed to set header attribute %s: file: %s,function: %s, line: %ld",
-                                    value->u.object.values[x].name,__FILE__, __FUNCTION__, __LINE__);
-                        }
-                        break;
-                case json_boolean:
-                        if(!cjose_header_set(hdr, value->u.object.values[x].name, (value->u.object.values[x].value)->u.boolean, &err))
                         {
                             _pam_log(LOG_ERR, "Failed to set header attribute %s: file: %s,function: %s, line: %ld",
                                     value->u.object.values[x].name,__FILE__, __FUNCTION__, __LINE__);
@@ -192,12 +177,12 @@ void jwt_set_header(cjose_header_t *hdr, json_value* value)
 }
 
 cjose_header_t *
-jwt_create_custom_header(pam_handle_t, *pamh, json_value *header)
+jwt_create_custom_header(pam_handle_t *pamh, json_value *header)
 {
     /*
      * Customize header if needed
      */
-    char *hdr = NULL;
+    cjose_err err;
     json_value *tmp = NULL;
 
     // set header for JWE
@@ -218,19 +203,21 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
      * Customize payload if needed
      */
     time_t iat;
-    char *user = NULL;
+    char *user = NULL,
+         username[LOGIN_USERNAME_LEN];
     char *scope = NULL,
          *plain=NULL;
-    json_value *tmp=NULL;
+    json_value *tmp=NULL,
+               *jval = NULL;
 
     iat = time(NULL);
     scope = pam_getenv(pamh, "ROLE");
   
     if(!scope) {
-        getlogin_r(username, 100);
+        getlogin_r(username, LOGIN_USERNAME_LEN);
         if(strlen(username) < 1) {
             _pam_log(LOG_ERR, "token creation- Failed to get local username");
-            return;
+            return NULL;
         } else {
             scope = username;
         }
@@ -238,17 +225,17 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
     _pam_get_user(pamh, &user);
 
     tmp = json_object_new(1024);
-    jval = json_integer_new(cur_time+9000);
-    json_object_push_uniq(plain, "exp", jval);
+    jval = json_integer_new(iat+9000);
+    json_object_push_uniq(payload, "exp", jval);
 
-    jval = json_integer_new(cur_time);
-    json_object_push_uniq(plain, "iat", jval);
+    jval = json_integer_new(iat);
+    json_object_push_uniq(payload, "iat", jval);
 
-    jval = json_string_new(name);
-    json_object_push_uniq(plain, "name", jval);
+    jval = json_string_new(user);
+    json_object_push_uniq(payload, "name", jval);
 
     jval = json_string_new(scope);
-    json_object_push_uniq(plain, "scope", jval);
+    json_object_push_uniq(payload, "scope", jval);
 
     plain = (char *) malloc(json_measure(payload));
     tmp = payload->parent;
@@ -269,11 +256,11 @@ jwt_create_token(pam_handle_t *pamh)
                 *payload=NULL;
 
     char *jwk = get_secret_jwks(JWT_SECRET_FILE);
-    if(!root) {
+    if(!jwk) {
         _pam_log(LOG_ERR, "token creation- Failed to get JWK file : %s", JWT_SECRET_FILE);
         return NULL;
     }
-    root = jwk_parse_file(JWT_DEFINITION_FILE);
+    root = jwt_parse_file(JWT_DEFINITION_FILE);
     if(!root) {
         _pam_log(LOG_ERR, "token creation- Failed to parse token definition file : %s", JWT_DEFINITION_FILE);
         return NULL;
@@ -292,5 +279,5 @@ jwt_create_token(pam_handle_t *pamh)
     hdr = jwt_create_custom_header(pamh, header);
     plain = jwt_get_serialized_custom_payload(pamh, payload);
 
-    return create_jwt(hdr, jwk, payload);
+    return create_jwt(hdr, jwk, plain);
 }

@@ -65,10 +65,13 @@ libtac_la_LDFLAGS = -version-info 2:0:0 -shared -Wl,--no-undefined \
 pam_tacplus_la_SOURCES = pam_tacplus.h \
 pam_tacplus.c \
 support.h \
-support.c
+support.c \
+jwt_util.h \
+jwt_util.c
+
 pam_tacplus_la_CFLAGS = $(AM_CFLAGS) -I $(top_srcdir)/libtac/include
 pam_tacplus_la_LDFLAGS = -module -avoid-version -shared
-pam_tacplus_la_LIBADD = -L.libs -ltac -ltacplus_map -lpam $(OPENSSL_LIBS)
+pam_tacplus_la_LIBADD = -L.libs -ltac -ltacplus_map -lpam -lcjose -ljsonbuilder -ljsonparser -lm $(OPENSSL_LIBS)
 # no versioning for this, since it's always installed as pam_tacplus.so
 # and not ever used as a link library
 
