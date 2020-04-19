@@ -206,7 +206,9 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
     char *user = NULL,
          username[LOGIN_USERNAME_LEN];
     char *scope = NULL,
-         *plain=NULL;
+         *plain=NULL,
+         *rtb_allow_cmds=NULL,
+         *rtb_deny_cmds=NULL;
     json_value *tmp=NULL,
                *jval = NULL;
 
@@ -236,6 +238,22 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
 
     jval = json_string_new(scope);
     json_object_push_uniq(payload, "scope", jval);
+
+    rtb_allow_cmds= pam_getenv(pamh, "RTB_ALLOW_CMDS");
+    if(!rtb_allow_cmds) {
+        _pam_log(LOG_WARNING, "token creation- Failed to get allow cmds for role %s", scope);
+    } else{
+        jval = json_string_new(rtb_allow_cmds);
+        json_object_push_uniq(payload, "rtb-allow-cmds", jval);
+    }
+
+    rtb_deny_cmds= pam_getenv(pamh, "RTB_DENY_CMDS");
+    if(!rtb_deny_cmds) {
+        _pam_log(LOG_WARNING, "token creation- Failed to get deny cmds for role %s", scope);
+    } else {
+        jval = json_string_new(rtb_deny_cmds);
+        json_object_push_uniq(payload, "rtb-deny-cmds", jval);
+    }
 
     plain = (char *) malloc(json_measure(payload));
     tmp = payload->parent;
