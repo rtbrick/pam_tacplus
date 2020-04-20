@@ -205,10 +205,10 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
     time_t iat;
     char *user = NULL,
          username[LOGIN_USERNAME_LEN];
-    char *scope = NULL,
-         *plain=NULL,
-         *rtb_allow_cmds=NULL,
-         *rtb_deny_cmds=NULL;
+    char *plain=NULL;
+    const char *scope = NULL,
+               *rtb_allow_cmds=NULL,
+               *rtb_deny_cmds=NULL;
     json_value *tmp=NULL,
                *jval = NULL;
 
@@ -264,7 +264,7 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
     return plain;
 }
 
-char *
+const char *
 jwt_create_token(pam_handle_t *pamh)
 {
     char *plain = NULL;

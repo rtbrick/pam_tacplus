@@ -38,7 +38,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
+#include <tacplus/map_tacplus_user.h>
 
 tacplus_server_t tac_srv[TAC_PLUS_MAXSERVERS];
 extern tacplus_server_t active_server;
@@ -528,7 +528,7 @@ void
 pam_create_rtb_token(pam_handle_t *pamh)
 {
     char attrenv[1024] = {0};
-    char *token = NULL;
+    const char *token = NULL;
   
     token = jwt_create_token(pamh);
     snprintf(attrenv,1024, "RTB_TOKEN=%s",token);
