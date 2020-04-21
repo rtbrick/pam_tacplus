@@ -258,6 +258,7 @@ _tmp="$(echo "$_ver_str" | grep -Ec -- '-')" && {
 # between commands and don't forget that this is a string concatenation operation
 # ( += ), a simple = will just delete all the commands already present in
 # _pkg_install_cmd . Multiple make commands can be added.
+_pkg_install_cmd+=" mkdir -p /usr/local/share/doc;";
 _pkg_install_cmd+=" make \"app_ver=$_ver_str\" install;";
 
 # Finally execute checkinstall with all the prepared arguments and install
