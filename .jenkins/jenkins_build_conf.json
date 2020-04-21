@@ -10,7 +10,7 @@
 			"name": "builder",
 			"image": "docker.rtbrick.net/devops/images/rtbrick/ubuntu-bionic-builder:latest",
 			"deps": [
-				"autoconf-archive", "libpam0g-dev", "rtbrick-libtacplus-map"
+				"autoconf-archive", "libpam0g-dev", "rtbrick-libtacplus-map", "libcjose-dev", "rtbrick-libinfra"
 			],
 			"build_cmd": ".jenkins/jenkins_build_run_make.sh"
 		}
@@ -22,7 +22,7 @@
         "pkg_descr": "RtBrick fork of pam_tacplus: extended for full tacacs client solution",
         "pkg_group": "rtbrick-rbfs",
         "pkg_deps": [
-		"libpam0g", "rtbrick-libtacplus-map"
+		"libpam0g", "rtbrick-libtacplus-map", "libcjose-dev", "rtbrick-libinfra"
 	],
 	"pkg_services": [ ],
 
