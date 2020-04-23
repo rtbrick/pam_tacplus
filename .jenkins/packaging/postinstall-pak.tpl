@@ -34,3 +34,6 @@ if [ "__{{ .ServiceName }}" != "__" ] && [ "__{{ .ServiceName }}" != "__ " ]; th
 fi
 
 # Add more commands after this line.
+
+cp /usr/share/rtbrick/tacplus/pam.d/* /etc/pam.d/;
+[ ! -f "/etc/tacplus_servers" ] && cp /usr/local/etc/tacplus_servers /etc/tacplus_servers;

@@ -259,6 +259,16 @@ _tmp="$(echo "$_ver_str" | grep -Ec -- '-')" && {
 # ( += ), a simple = will just delete all the commands already present in
 # _pkg_install_cmd . Multiple make commands can be added.
 _pkg_install_cmd+=" mkdir -p /usr/local/share/doc;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/pam.d/;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/ jwt-config/jwt_claims.json;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-account;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-auth;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-password;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-session;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-session-noninteractive;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/sshd;";
 _pkg_install_cmd+=" make \"app_ver=$_ver_str\" install;";
 
 # Finally execute checkinstall with all the prepared arguments and install
