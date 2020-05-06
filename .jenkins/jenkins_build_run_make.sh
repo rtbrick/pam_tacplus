@@ -38,7 +38,6 @@ trap 'trap_debug "$?" "$BASH_COMMAND" "$LINENO" "${BASH_SOURCE[0]}"' ERR;
 	[ "${BASH_VERSION:-0}" != "0" ] && set -o functrace;
 }
 
-ln -s /usr/local/lib/libjsonbuilder.so.0.1.0 /usr/local/lib/libjsonbuilder.so;
 ./auto.sh;
 ./configure;
 make clean;
