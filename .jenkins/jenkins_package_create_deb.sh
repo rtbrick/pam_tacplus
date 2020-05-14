@@ -49,6 +49,8 @@ _lsb_release="$(which lsb_release)";
 # build conf JSON file.
 PAK_FILES_LOCATION="${__jenkins_scripts_dir:-./.jenkins}/packaging";
 SYS_FILES_LOCATION="${__jenkins_scripts_dir:-./.jenkins}/system";
+SCRIPTS_LOCATION="${__jenkins_scripts_dir:-./.jenkins}/scripts";
+SCRIPTS_INSTALL_DEST="/usr/local/bin";
 RTBRICK_BD_CONF_DIR="/etc/rtbrick/bd/config";
 SYSTEMD_SERVICE_DIR="/lib/systemd/system";
 _pkg_maintainer="RtBrick Support <support@rtbrick.com>";
@@ -221,6 +223,14 @@ if [ -z "$_pkg_sw_ver_skip" ]; then
 	done
 fi
 
+# Install addional scripts inside the package
+for f in $(find ${SCRIPTS_LOCATION}/ -type f -iname '*.sh' 2>/dev/null || true); do
+	_pkg_install_cmd+=" install -o root -g root -m 0755 -D -t ${SCRIPTS_INSTALL_DEST}/ $f;";
+done
+for f in $(find ${SCRIPTS_LOCATION}/ -type f -iname '*.bash' 2>/dev/null || true); do
+	_pkg_install_cmd+=" install -o root -g root -m 0755 -D -t ${SCRIPTS_INSTALL_DEST}/ $f;";
+done
+
 # Get architecture and ubuntu release codename.
 rel_arch="$($_dpkg --print-architecture)";
 [ -z "$rel_arch" ] && die "Cannot build a package without knowing the arch.";
@@ -259,6 +269,16 @@ _tmp="$(echo "$_ver_str" | grep -Ec -- '-')" && {
 # ( += ), a simple = will just delete all the commands already present in
 # _pkg_install_cmd . Multiple make commands can be added.
 _pkg_install_cmd+=" mkdir -p /usr/local/share/doc;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/pam.d/;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/ jwt-config/jwt_claims.json;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-account;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-auth;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-password;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-session;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-session-noninteractive;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/sshd;";
 _pkg_install_cmd+=" make \"app_ver=$_ver_str\" install;";
 
 # Finally execute checkinstall with all the prepared arguments and install

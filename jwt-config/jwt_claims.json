@@ -1,0 +1,16 @@
+{
+ "header":{
+     "alg": "HS256",
+     "kid": "rtbrick",
+     "typ": "JWT"
+   },
+   "payload": {
+     "exp": 0,
+     "iat": 0,
+     "iss": "rtbrick-pam",
+     "name": "rtbrick",
+     "scope": "rtbrick",
+     "sub": "99e8b4a1-3a6b-4c29-bedb-7e77cc91ce6b"
+   }
+}
+
