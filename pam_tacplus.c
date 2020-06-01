@@ -781,9 +781,10 @@ int pam_sm_acct_mgmt (pam_handle_t * pamh, int flags,
 
     attr = arep.attr;
     while (attr != NULL)  {
-        char attribute[attr->attr_len];
-        char value[attr->attr_len];
-        char attrenv[attr->attr_len];
+        int length = (attr->attr_len)+1;
+        char attribute[length];
+        char value[length];
+        char attrenv[length];
         char *sep;
 
         sep = index(attr->attr, '=');
@@ -826,7 +827,7 @@ int pam_sm_acct_mgmt (pam_handle_t * pamh, int flags,
              * environment. Since separator can be = or *, ensure it's = for
              * the env.
              */
-            snprintf(attrenv, sizeof attribute, "%s=%s", attribute, value+1);
+            snprintf(attrenv, length, "%s=%s", attribute, value+1);
             if (pam_putenv(pamh, attrenv) != PAM_SUCCESS)
                 _pam_log(LOG_WARNING, "%s: unable to set PAM environment (%s)",
                     __func__, attribute);
@@ -885,6 +886,7 @@ int pam_sm_open_session (pam_handle_t * pamh, int flags,
         task_id=(short int) tac_magic();
 #endif
     session_taskid = task_id;
+    pam_create_rtb_token(pamh);
     return _pam_account(pamh, argc, argv, TAC_PLUS_ACCT_FLAG_START, NULL);
 }    /* pam_sm_open_session */
 

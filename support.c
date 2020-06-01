@@ -24,6 +24,7 @@
 #define PAM_SM_PASSWORD
 
 #include "support.h"
+#include "jwt_util.h"
 #include "pam_tacplus.h"
 
 #include <stdlib.h>
@@ -34,6 +35,10 @@
 #include <ctype.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <tacplus/map_tacplus_user.h>
 
 tacplus_server_t tac_srv[TAC_PLUS_MAXSERVERS];
 extern tacplus_server_t active_server;
@@ -432,7 +437,7 @@ void update_mapped(pam_handle_t *pamh, char *user, unsigned level, char *rhost)
     struct sigaction newsa, oldsa;
     const char *path = "/sbin/mkhomedir_helper";
 
-    if (!update_mapuser(user, level, rhost, tac_use_tachome))
+    if (!update_mapuser(user, level, rhost, user, tac_use_tachome))
         return;
 
     /*
@@ -487,29 +492,47 @@ void update_mapped(pam_handle_t *pamh, char *user, unsigned level, char *rhost)
 
     child = fork();
     if(child == -1) {
-        pam_syslog(LOG_ERR, "fork to exec %s %s failed: %m", path, user);
+        _pam_log(LOG_ERR, "fork to exec %s %s failed: %m", path, user);
         return;
     }
     if(child == 0) {
         execl(path, path, user, NULL);
-        pam_syslog(LOG_ERR, "exec %s %s failed: %m", path, user);
+        _pam_log(LOG_ERR, "exec %s %s failed: %m", path, user);
         exit(1);
     }
 
 	while ((rc=waitpid(child, &retval, 0)) < 0 && errno == EINTR)
         ;
 	if(rc < 0)
-        pam_syslog(pamh, LOG_ERR, "waitpid for exec of %s %s failed: %m", path,
+        _pam_log(LOG_ERR, "waitpid for exec of %s %s failed: %m", path,
             user);
     else if(!WIFEXITED(retval))
-        pam_syslog(pamh, LOG_ERR, "%s %s abnormal exit: 0x%x", retval);
+        _pam_log(LOG_ERR, "%s %s abnormal exit: 0x%x", retval);
     else {
         retval = WEXITSTATUS(retval);
         if(retval)
-            pam_syslog(pamh, LOG_ERR, "%s %s abnormal exit: %d", path, user,
+            _pam_log(LOG_ERR, "%s %s abnormal exit: %d", path, user,
                 retval);
 	}
 
     if (restore)
         sigaction(SIGCHLD, &oldsa, NULL);
+}
+
+
+/*
+ * Create rtbick-token upon user login
+ *
+ */
+void
+pam_create_rtb_token(pam_handle_t *pamh)
+{
+    char attrenv[1024] = {0};
+    const char *token = NULL;
+
+    token = jwt_create_token(pamh);
+    snprintf(attrenv,1024, "RTB_TOKEN=%s",token);
+    if (pam_putenv(pamh, attrenv) != PAM_SUCCESS) {
+        _pam_log(LOG_ERR, "token creation- Failed to stored in environment");
+    }
 }
