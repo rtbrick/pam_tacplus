@@ -235,6 +235,8 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
 
     jval = json_string_new(user);
     json_object_push_uniq(payload, "name", jval);
+    /*sub claim JWT is username since it is unique per user*/
+    json_object_push_uniq(payload, "sub", jval);
 
     jval = json_string_new(scope);
     json_object_push_uniq(payload, "scope", jval);
