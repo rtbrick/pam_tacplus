@@ -22,6 +22,8 @@ auth	[default=1 success=ignore] pam_succeed_if.so uid > 1000 quiet
 # or /lib/security/ path
 auth	[authinfo_unavail=ignore success=2 default=ignore]	pam_tacplus.so include=/etc/tacplus_servers login=login protocol=ssh service=shell debug=1
 
+auth    required           pam_tally2.so onerr=fail deny=5 unlock_time=420 audit
+
 auth	[success=1 default=ignore]	pam_unix.so nullok_secure try_first_pass
 # here's the fallback if no module succeeds
 auth	requisite			pam_deny.so
@@ -33,7 +35,5 @@ auth	required			pam_permit.so
 # end of pam-auth-update config
 
 auth required pam_warn.so
-
-auth    required           pam_tally2.so onerr=fail deny=5 unlock_time=420 audit
 
 #success required pam_warn.so
