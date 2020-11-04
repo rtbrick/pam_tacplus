@@ -18,6 +18,7 @@
 			"deps": [
 				"autoconf-archive",
 				"libpam0g-dev",
+				"libpam-cracklib",
 				"libcjose-dev",
 				"rtbrick-json-parser",
 				"rtbrick-json-builder",
@@ -34,6 +35,7 @@
         "pkg_group": "rtbrick-rbfs",
         "pkg_deps": [
 		"libpam0g",
+		"libpam-cracklib",
 		"libcjose0",
 		"rtbrick-base-env",
 		"rtbrick-json-parser",
