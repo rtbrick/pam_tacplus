@@ -33,4 +33,7 @@ auth	required			pam_permit.so
 # end of pam-auth-update config
 
 auth required pam_warn.so
+
+auth    required           pam_tally2.so onerr=fail deny=3 unlock_time=600 audit
+
 #success required pam_warn.so
