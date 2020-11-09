@@ -34,6 +34,6 @@ auth	required			pam_permit.so
 
 auth required pam_warn.so
 
-auth    required           pam_tally2.so onerr=fail deny=3 unlock_time=600 audit
+auth    required           pam_tally2.so onerr=fail deny=5 unlock_time=420 audit
 
 #success required pam_warn.so
