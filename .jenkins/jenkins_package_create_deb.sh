@@ -273,6 +273,7 @@ _pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/;";
 _pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/;";
 _pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/pam.d/;";
 _pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/ jwt-config/jwt_claims.json;";
+_pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/ jwt-config/rbac_role_rtb_cmds.json;";
 _pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-account;";
 _pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-auth;";
 _pkg_install_cmd+=" install -o root -g root -m 0644 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-password;";

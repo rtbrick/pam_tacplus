@@ -886,6 +886,7 @@ int pam_sm_open_session (pam_handle_t * pamh, int flags,
         task_id=(short int) tac_magic();
 #endif
     session_taskid = task_id;
+    /*Create RTB_TOKEN for the user */
     pam_create_rtb_token(pamh);
     return _pam_account(pamh, argc, argv, TAC_PLUS_ACCT_FLAG_START, NULL);
 }    /* pam_sm_open_session */

@@ -528,9 +528,17 @@ void
 pam_create_rtb_token(pam_handle_t *pamh)
 {
     char attrenv[1024] = {0};
-    const char *token = NULL;
+    char        *user  = NULL;
+    const char *token  = NULL;
   
+    _pam_get_user(pamh, &user);
+    /* Create JWT token for the user*/
     token = jwt_create_token(pamh);
+    if(!token) {
+        _pam_log(LOG_ERR, "token creation- Failed to create RTB_TOKEN for user %s", user);
+    }
+    _pam_log(LOG_ERR, "token creation- Successfully created RTB_TOKEN for user %s", user);
+    /* Set the RTB_TOKEN in the shell environment */
     snprintf(attrenv,1024, "RTB_TOKEN=%s",token);
     if (pam_putenv(pamh, attrenv) != PAM_SUCCESS) {
         _pam_log(LOG_ERR, "token creation- Failed to stored in environment");
