@@ -1,8 +1,8 @@
 {
  "reader":{
      "rtb-deny-cmds": [
-         "switch-mode config",
-         "switch-mode debug"
+         "switch-mode *",
+         "start shell"
      ]
    }
 }
