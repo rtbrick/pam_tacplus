@@ -38,4 +38,6 @@ fi
 cp /usr/share/rtbrick/tacplus/pam.d/* /etc/pam.d/;
 [ ! -f "/etc/tacplus_servers" ] && cp /usr/local/etc/tacplus_servers /etc/tacplus_servers;
 
-ln -s /usr/local/lib/security/pam_tacplus.so /lib/x86_64-linux-gnu/security/pam_tacplus.so;
+if [ ! -e /lib/x86_64-linux-gnu/security/pam_tacplus.so ]; then
+        ln -s /usr/local/lib/security/pam_tacplus.so /lib/x86_64-linux-gnu/security/pam_tacplus.so;
+fi
