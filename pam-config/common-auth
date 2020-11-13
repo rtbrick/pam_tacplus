@@ -13,6 +13,9 @@
 # pam-auth-update to manage selection of other modules.  See
 # pam-auth-update(8) for details.
 
+#pam_tally2 requires to be the first module called
+auth    required           pam_tally2.so onerr=fail deny=10 unlock_time=120 audit
+
 # here are the per-package modules (the "Primary" block)
 auth	[default=1 success=ignore] pam_succeed_if.so uid > 1000 quiet
 
@@ -21,8 +24,6 @@ auth	[default=1 success=ignore] pam_succeed_if.so uid > 1000 quiet
 # Note: Make sure pam_tacplus.so is available either at /lib/x86_64-linux-gnu/security/
 # or /lib/security/ path
 auth	[authinfo_unavail=ignore success=2 default=ignore]	pam_tacplus.so include=/etc/tacplus_servers login=login protocol=ssh service=shell debug=1
-
-auth    required           pam_tally2.so onerr=fail deny=5 unlock_time=60 audit
 
 auth	[success=1 default=ignore]	pam_unix.so nullok_secure try_first_pass
 # here's the fallback if no module succeeds
