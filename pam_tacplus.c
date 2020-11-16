@@ -661,6 +661,8 @@ int pam_sm_authenticate (pam_handle_t * pamh, int flags,
     if (ctrl & PAM_TAC_DEBUG)
         syslog(LOG_DEBUG, "%s: exit with pam status: %d", __func__, status);
 
+    _pam_log(LOG_ERR, "%s: PAM login status: %d for user: %s", __func__, status, user);
+
 err:
     if (user && user != puser)
         free(user); /* it was stdrup'ed */

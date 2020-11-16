@@ -8,6 +8,8 @@
 #include <cjose/jws.h>
 #include <cjose/header.h>
 #include <time.h>
+#include <pwd.h>
+#include <grp.h>
 #include <json-builder.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,7 +27,7 @@ typedef enum jwt_rtb_cmd_type_t {
 static char *g_cmd_secret_jwk = NULL;
 
 json_value*
-json_parse_file (const char *file_name)
+jwt_util_json_parse_file (const char *file_name)
 {
     FILE *fp;
     struct stat filestatus;
@@ -81,7 +83,7 @@ json_parse_file (const char *file_name)
 /* Reads and returns JWK from the specified secret file */
 
 char *
-get_secret_jwks(const char *key_filename)
+jwt_util_get_secret_jwks(const char *key_filename)
 {
     json_value  *file_json  = NULL,
                 *keys       = NULL,
@@ -92,7 +94,7 @@ get_secret_jwks(const char *key_filename)
     char       *secret      = NULL;
 
     if(!g_cmd_secret_jwk) {
-        file_json = json_parse_file(key_filename);
+        file_json = jwt_util_json_parse_file(key_filename);
         if(!file_json) {
             return NULL;
         }
@@ -122,7 +124,7 @@ get_secret_jwks(const char *key_filename)
 }
 
 const char *
-create_jwt(cjose_header_t *hdr, const char *key, const char *plain){
+jwt_util_create_jwt(cjose_header_t *hdr, const char *key, const char *plain){
 
     cjose_err err;
     char *token=NULL;
@@ -185,7 +187,7 @@ void jwt_set_header(cjose_header_t *hdr, json_value* value)
 }
 
 cjose_header_t *
-jwt_create_custom_header(pam_handle_t *pamh, json_value *header)
+jwt_util_create_custom_header(pam_handle_t *pamh, json_value *header)
 {
     /*
      * Customize header if needed
@@ -204,26 +206,78 @@ jwt_create_custom_header(pam_handle_t *pamh, json_value *header)
     return hdr;
 }
 
-bool
-jwt_set_role_default_cmds(const char *role_name, char *commands, uint8_t cmd_type) {
+char *
+jwt_util_get_role(char *roles, json_value *value)
+{
+    uint16_t    top_priority = ROLE_DEFAULT_PRIORITY;
+    json_value  *priority    = NULL,
+                *jval_role   = NULL;
+    char        *role        = NULL;
 
-    json_value  *root = NULL,
-                *role = NULL,
-                *rtb_cmds = NULL;
-    char        *delimiter = ";",
-                *cmd = NULL;
+    if (NULL == roles && NULL == value) {
+        /* return default role_name */ 
+        return ROLES_DEFAULT_ROLE_NAME;
+    }
+    /* Returns first token */
+    char* token = strtok(roles, ROLES_TOKEN_DELIMITER);
+
+    /* tokens are delimeted by " " */
+    while (token != NULL) {
+        jval_role = json_get(value, json_object, token);
+        if(!jval_role) {
+            _pam_log(LOG_ERR,
+                    "token creation- Failed to read (role : %s) field from json file %s",
+                    token,
+                    JWT_RBAC_RTB_CMDS_FILE);
+            goto NEXT_ROLE;
+        }
+        priority = json_get(jval_role, json_integer, "priority");
+        if (priority) {
+            if (top_priority > JSON_INT(priority)) {
+                top_priority = JSON_INT(priority);
+                role = token;
+            }
+        }
+    NEXT_ROLE:
+        token = strtok(NULL, ROLES_TOKEN_DELIMITER);
+    }
+    if (ROLE_DEFAULT_PRIORITY == top_priority) {
+        /* return role as default */ 
+        return ROLES_DEFAULT_ROLE_NAME;
+    }
+    return role;
+}
+
+bool
+jwt_util_set_role_default_cmds(const char *roles, char *commands, uint8_t cmd_type)
+{
+
     uint16_t    length,
                 idx;
-    bool        ret = true;
+    bool        ret          = true;
+    json_value  *root        = NULL,
+                *role        = NULL,
+                *rtb_cmds    = NULL;
+    char        *delimiter   = ";",
+                *cmd         = NULL,
+                *role_name   = NULL,
+                *tmp_roles   = NULL;
 
-    root = json_parse_file(JWT_RBAC_RTB_CMDS_FILE);
+    root = jwt_util_json_parse_file(JWT_RBAC_RTB_CMDS_FILE);
     if(!root) {
-        _pam_log(LOG_ERR, "token creation- Failed to parse rbac role cmds definition file : %s", JWT_RBAC_RTB_CMDS_FILE);
+        _pam_log(LOG_ERR,
+                "token creation- Failed to parse rbac role cmds definition file : %s",
+                JWT_RBAC_RTB_CMDS_FILE);
         return false;
     }
+    tmp_roles = strdup(roles);
+    role_name = jwt_util_get_role(tmp_roles, root);
     role = json_get(root, json_object, role_name);
     if(!role) {
-        _pam_log(LOG_ERR, "token creation- Failed to read (role : %s) field from json file %s", role_name, JWT_RBAC_RTB_CMDS_FILE);
+        _pam_log(LOG_DEBUG,
+                "token creation- Failed to read (role : %s) field from json file %s",
+                role_name,
+                JWT_RBAC_RTB_CMDS_FILE);
         ret = false;
         goto done;
     }
@@ -232,7 +286,10 @@ jwt_set_role_default_cmds(const char *role_name, char *commands, uint8_t cmd_typ
         case JWT_RTB_CMD_ALLOW:
             rtb_cmds = json_get(role, json_array, "rtb-allow-cmds");
             if(!rtb_cmds) {
-                _pam_log(LOG_ERR, "token creation- Failed to allow-cmds for role : %s field from json file %s", role_name, JWT_RBAC_RTB_CMDS_FILE);
+                _pam_log(LOG_DEBUG,
+                         "token creation- Failed to allow-cmds for role : %s field from json file %s",
+                         role_name,
+                         JWT_RBAC_RTB_CMDS_FILE);
                 ret = false;
                 goto done;
             }
@@ -241,7 +298,10 @@ jwt_set_role_default_cmds(const char *role_name, char *commands, uint8_t cmd_typ
         case JWT_RTB_CMD_DENY:
             rtb_cmds = json_get(role, json_array, "rtb-deny-cmds");
             if(!rtb_cmds) {
-                _pam_log(LOG_ERR, "token creation- Failed to deny-cmds for role : %s field from json file %s", role_name, JWT_RBAC_RTB_CMDS_FILE);
+                _pam_log(LOG_DEBUG,
+                        "token creation- Failed to deny-cmds for role : %s field from json file %s",
+                        role_name,
+                        JWT_RBAC_RTB_CMDS_FILE);
                 ret = false;
                 goto done;
             }
@@ -268,23 +328,70 @@ jwt_set_role_default_cmds(const char *role_name, char *commands, uint8_t cmd_typ
 done:
     /*Free read json value */
     json_value_free(root);
+    free(tmp_roles);
     return ret;
 
 }
 
+uint16_t
+jwt_util_get_user_roles(char *username, char **roles)
+{
+    int32_t       ngroups    = LOGIN_USER_MAX_GROUPS;
+    gid_t         *groups    = NULL;
+    struct group  *gr        = NULL;
+    struct passwd *pw        = NULL;
+    char          *delimiter = " ",
+                  *tmp_ptr   = NULL;
+    int32_t       len; 
+
+    groups = malloc(sizeof(*groups) * ngroups);
+    pw = getpwnam(username);
+    if (pw == NULL) {
+        _pam_log(LOG_ERR, "getpwnam() returned NULL, for user: %s\n", username);
+        return 0;
+    }
+    /* Retrieve group list */
+
+    if (getgrouplist(username, pw->pw_gid, groups, &ngroups) == -1) {
+        _pam_log(LOG_ERR, "getgrouplist() returned -1; ngroups = %d\n",
+                   ngroups);
+        return 0;
+    }
+
+    *roles = (char *)malloc(ngroups*USER_GROUP_NAME_LEN);
+    for (int j = 0; j < ngroups; j++) {
+        gr = getgrgid(groups[j]);
+        if (gr != NULL) {
+            strcat(*roles, gr->gr_name);
+            strcat(*roles, delimiter);
+        }
+    }
+
+#if 0
+    /* Remove last " " character and Null terminate roles string */
+    len = strlen(*roles);
+    tmp_ptr = *roles+len-1;
+    tmp_ptr = '\0';
+#endif
+
+    free(groups);
+    return ngroups;
+}
+
 char *
-jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
+jwt_util_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
 {
     /*
      * Customize payload if needed
      */
     time_t      iat;
+    uint16_t    ngroups;
     char        *user                        = NULL,
                 username[LOGIN_USERNAME_LEN] = {0},
                 cmd[JWT_RTB_CMDS_LEN]        = {0}; /* Command buffer to store allow/deny commands */
     char        *plain                       = NULL;
-    const char  *scope                       = NULL,
-                *rtb_allow_cmds              = NULL,
+    char        *roles                       = NULL;
+    const char  *rtb_allow_cmds              = NULL,
                 *rtb_deny_cmds               = NULL;
     json_value  *tmp                         = NULL,
                 *jval                        = NULL;
@@ -293,20 +400,24 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
 
     /* Get token issue at time */
     iat = time(NULL);
-    /* Get role from the pam handle */
-    scope = pam_getenv(pamh, "ROLE");
   
+    _pam_get_user(pamh, &user);
+  
+    /* Get role from the pam handle */
+    roles = pam_getenv(pamh, "ROLE");
     /* If role is not present the it role is the local user name*/
-    if(!scope) {
+    if(!roles) {
         getlogin_r(username, LOGIN_USERNAME_LEN);
         if(strlen(username) < 1) {
             _pam_log(LOG_ERR, "token creation- Failed to get local username");
             return NULL;
-        } else {
-            scope = username;
+        }
+        ngroups = jwt_util_get_user_roles(username, &roles);
+        if (!ngroups && !roles) {
+            _pam_log(LOG_ERR, "token creation- Failed to get groups for user :%s", username);
+            return NULL;
         }
     }
-    _pam_get_user(pamh, &user);
 
     tmp = json_object_new(1024);
     jval = json_integer_new(iat+9000);
@@ -320,17 +431,17 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
     /*sub claim JWT is username since it is unique per user*/
     json_object_push_uniq(payload, "sub", jval);
 
-    jval = json_string_new(scope);
+    jval = json_string_new(roles);
     json_object_push_uniq(payload, "scope", jval);
 
     rtb_allow_cmds = pam_getenv(pamh, "RTB_ALLOW_CMDS");
     if(!rtb_allow_cmds) {
-        ret = jwt_set_role_default_cmds(scope, cmd, JWT_RTB_CMD_ALLOW);
+        ret = jwt_util_set_role_default_cmds(roles, cmd, JWT_RTB_CMD_ALLOW);
         if (ret) {
             jval = json_string_new(cmd);
             json_object_push_uniq(payload, "rtb-allow-cmds", jval);
         } else{
-            _pam_log(LOG_WARNING, "token creation- Failed to get allow cmds for role %s", scope);
+            _pam_log(LOG_DEBUG, "token creation- Failed to get allow cmds for role %s", roles);
         }
     } else{
         jval = json_string_new(rtb_allow_cmds);
@@ -342,12 +453,12 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
 
     rtb_deny_cmds= pam_getenv(pamh, "RTB_DENY_CMDS");
     if(!rtb_deny_cmds) {
-        ret = jwt_set_role_default_cmds(scope, cmd, JWT_RTB_CMD_DENY);
+        ret = jwt_util_set_role_default_cmds(roles, cmd, JWT_RTB_CMD_DENY);
         if (ret) {
             jval = json_string_new(cmd);
             json_object_push_uniq(payload, "rtb-deny-cmds", jval);
         } else{
-            _pam_log(LOG_WARNING, "token creation- Failed to get deny cmds for role %s", scope);
+            _pam_log(LOG_DEBUG, "token creation- Failed to get deny cmds for role %s", roles);
         }
     } else {
         jval = json_string_new(rtb_deny_cmds);
@@ -365,7 +476,7 @@ jwt_get_serialized_custom_payload(pam_handle_t *pamh, json_value *payload)
 
 /* Creates a JWT token based on the user parameters present in pam handle*/
 const char *
-jwt_create_token(pam_handle_t *pamh)
+jwt_util_create_token(pam_handle_t *pamh)
 {
     char            *plain      = NULL;
     cjose_header_t  *hdr        = NULL;
@@ -374,13 +485,13 @@ jwt_create_token(pam_handle_t *pamh)
                     *payload    = NULL;
 
     /*Get the JWK secret file which is needed for signing token*/
-    char *jwk = get_secret_jwks(JWT_SECRET_FILE);
+    char *jwk = jwt_util_get_secret_jwks(JWT_SECRET_FILE);
     if(!jwk) {
         _pam_log(LOG_ERR, "token creation- Failed to get JWK file : %s", JWT_SECRET_FILE);
         return NULL;
     }
     /*Get the json handle for JWT definition template file */
-    root = json_parse_file(JWT_DEFINITION_FILE);
+    root = jwt_util_json_parse_file(JWT_DEFINITION_FILE);
     if(!root) {
         _pam_log(LOG_ERR, "token creation- Failed to parse token definition file : %s", JWT_DEFINITION_FILE);
         return NULL;
@@ -399,7 +510,7 @@ jwt_create_token(pam_handle_t *pamh)
     }
 
     /* Create the JWT based on the header and payload definition */
-    hdr = jwt_create_custom_header(pamh, header);
-    plain = jwt_get_serialized_custom_payload(pamh, payload);
-    return create_jwt(hdr, jwk, plain);
+    hdr = jwt_util_create_custom_header(pamh, header);
+    plain = jwt_util_get_serialized_custom_payload(pamh, payload);
+    return jwt_util_create_jwt(hdr, jwk, plain);
 }

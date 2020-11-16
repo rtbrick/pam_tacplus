@@ -533,7 +533,7 @@ pam_create_rtb_token(pam_handle_t *pamh)
   
     _pam_get_user(pamh, &user);
     /* Create JWT token for the user*/
-    token = jwt_create_token(pamh);
+    token = jwt_util_create_token(pamh);
     if(!token) {
         _pam_log(LOG_ERR, "token creation- Failed to create RTB_TOKEN for user %s", user);
     }
