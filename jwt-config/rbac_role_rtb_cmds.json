@@ -2,13 +2,13 @@
  "supervisor":{
      "priority": 1,
      "rtb-allow-cmds": [
-	     "*"
+	     ".*"
      ]
    },
  "operator":{
      "priority": 2,
      "rtb-allow-cmds": [
-	     "*"
+	     ".*"
      ]
    },
  "reader":{
@@ -21,7 +21,7 @@
  "default":{
      "priority": 100,
      "rtb-deny-cmds": [
-         "*"
+         ".*"
      ]
    }
 }
