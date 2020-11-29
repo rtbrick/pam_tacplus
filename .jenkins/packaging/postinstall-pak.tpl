@@ -35,7 +35,8 @@ fi
 
 # Add more commands after this line.
 
-cp /usr/share/rtbrick/tacplus/pam.d/* /etc/pam.d/;
+cp /usr/share/rtbrick/tacplus/etc/pam.d/* /etc/pam.d/;
+cp /usr/share/rtbrick/tacplus/etc/security/group.conf /etc/security/group.conf;
 [ ! -f "/etc/tacplus_servers" ] && cp /usr/local/etc/tacplus_servers /etc/tacplus_servers;
 
 if [ ! -e /lib/x86_64-linux-gnu/security/pam_tacplus.so ]; then

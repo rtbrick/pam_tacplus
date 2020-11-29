@@ -271,16 +271,18 @@ _tmp="$(echo "$_ver_str" | grep -Ec -- '-')" && {
 _pkg_install_cmd+=" mkdir -p /usr/local/share/doc;";
 _pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/;";
 _pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/;";
-_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/pam.d/;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/etc/pam.d/;";
+_pkg_install_cmd+=" mkdir -p /usr/share/rtbrick/tacplus/etc/security/;";
 _pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/ jwt-config/jwt_claims.json;";
 _pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/ jwt-config/rbac_role_rtb_cmds.json;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-account;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-auth;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-password;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-session;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/common-session-noninteractive;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/sshd;";
-_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/pam.d/ pam-config/login;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-account;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-auth;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-password;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-session;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-session-noninteractive;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/sshd;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/login;";
+_pkg_install_cmd+=" install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/security/ pam-config/etc/security/group.conf;";
 _pkg_install_cmd+=" make \"app_ver=$_ver_str\" install;";
 
 # Finally execute checkinstall with all the prepared arguments and install
