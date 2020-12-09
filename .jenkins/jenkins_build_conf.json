@@ -42,6 +42,7 @@
     "pkg_deps": [
       "libpam0g",
       "libpam-cracklib",
+      "libpam-pwquality",
       "libcjose0",
       "rtbrick-base-env",
       "rtbrick-json-parser",
