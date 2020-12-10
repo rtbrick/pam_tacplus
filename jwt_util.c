@@ -342,9 +342,10 @@ jwt_util_get_user_roles(char *username, char **roles)
     struct passwd *pw        = NULL;
     char          *delimiter = " ",
                   *tmp_ptr   = NULL;
-    int32_t       len; 
+    int32_t       len,
+                  tmp_len    = 0;
 
-    groups = malloc(sizeof(*groups) * ngroups);
+    groups = (gid_t *) calloc(ngroups, sizeof(*groups));
     pw = getpwnam(username);
     if (pw == NULL) {
         _pam_log(LOG_ERR, "getpwnam() returned NULL, for user: %s\n", username);
@@ -358,12 +359,16 @@ jwt_util_get_user_roles(char *username, char **roles)
         return 0;
     }
 
-    *roles = (char *)malloc(ngroups*USER_GROUP_NAME_LEN);
+    *roles = (char *)calloc(ngroups, USER_GROUP_NAME_LEN);
     for (int j = 0; j < ngroups; j++) {
         gr = getgrgid(groups[j]);
         if (gr != NULL) {
+#if 0
             strcat(*roles, gr->gr_name);
             strcat(*roles, delimiter);
+#endif
+            sprintf(*roles+tmp_len, "%s ", gr->gr_name);
+            tmp_len = strlen(*roles);
         }
     }
 
