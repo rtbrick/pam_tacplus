@@ -46,5 +46,7 @@
   #define PAM_EXTERN extern
 #endif
 
+#define PAM_LOCAL_USER "supervisor"
+
 #endif  /* PAM_TACPLUS_H */
 

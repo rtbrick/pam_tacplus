@@ -38,7 +38,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <strings.h>
-
+#include <pwd.h>
 #include <tacplus/map_tacplus_user.h>
 
 #ifdef HAVE_CONFIG_H
@@ -142,8 +142,20 @@ int _pam_account(pam_handle_t *pamh, int argc, const char **argv,
             __func__, typemsg, PAM_TAC_VMAJ, PAM_TAC_VMIN, PAM_TAC_VPAT);
 
     _pam_get_user(pamh, &user);
+
     if (user == NULL)
         return PAM_USER_UNKNOWN;
+
+    /*
+     * Check if the user is local user(supervisor), if so then return from module with
+     * PAM_IGNORE status
+     * Proceed further with authentication only if the user is tacacs user.
+     * For local user(supervisor) authentication pam_unix should take care.
+     */
+
+    if (!strcmp(user, PAM_LOCAL_USER)) {
+        return PAM_IGNORE;
+    }
 
     if (ctrl & PAM_TAC_DEBUG)
         syslog(LOG_DEBUG, "%s: username [%s] obtained", __func__, user);
@@ -626,6 +638,17 @@ int pam_sm_authenticate (pam_handle_t * pamh, int flags,
     if (user == NULL)
         return PAM_USER_UNKNOWN;
 
+    /*
+     * Check if the user is local user(supervisor), if so then return from module with
+     * PAM_IGNORE status
+     * Proceed further with authentication only if the user is tacacs user.
+     * For local user(supervisor) authentication pam_unix should take care.
+     */
+
+    if (!strcmp(user, PAM_LOCAL_USER)) {
+        return PAM_IGNORE;
+    }
+
     if (ctrl & PAM_TAC_DEBUG)
         syslog(LOG_DEBUG, "%s: user [%s] obtained", __func__, user);
 
@@ -724,6 +747,16 @@ int pam_sm_acct_mgmt (pam_handle_t * pamh, int flags,
     if (user == NULL)
         return PAM_USER_UNKNOWN;
 
+    /*
+     * Check if the user is local user(supervisor), if so then return from module with
+     * PAM_IGNORE status
+     * Proceed further with authentication only if the user is tacacs user.
+     * For local user(supervisor) authentication pam_unix should take care.
+     */
+
+    if (!strcmp(user, PAM_LOCAL_USER)) {
+        return PAM_IGNORE;
+    }
 
     _pam_get_terminal(pamh, &tty);
     if(!strncmp(tty, "/dev/", 5))
@@ -949,6 +982,17 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
                 free(pass);
         }
         return PAM_USER_UNKNOWN;
+    }
+
+    /*
+     * Check if the user is local user(supervisor), if so then return from module with
+     * PAM_IGNORE status
+     * Proceed further with authentication only if the user is tacacs user.
+     * For local user(supervisor) authentication pam_unix should take care.
+     */
+
+    if (!strcmp(user, PAM_LOCAL_USER)) {
+        return PAM_IGNORE;
     }
 
     if (ctrl & PAM_TAC_DEBUG)

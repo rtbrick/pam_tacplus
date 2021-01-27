@@ -18,7 +18,7 @@ account required    pam_tally2.so
 
 
 # here are the per-package modules (the "Primary" block)
-account	[default=1 success=ignore] pam_succeed_if.so uid > 1000 quiet
+account	[default=1 success=ignore] pam_succeed_if.so uid >= 1000 quiet
 
 # Custom pam_tacplus module which authenticates tacacs user and looks for mapped users
 # in predefined local users list based on tacacs user privilege level

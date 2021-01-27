@@ -17,7 +17,7 @@
 auth    required           pam_tally2.so onerr=fail deny=10 unlock_time=120 audit
 
 # here are the per-package modules (the "Primary" block)
-auth	[default=1 success=ignore] pam_succeed_if.so uid > 1000 quiet
+auth	[default=1 success=ignore] pam_succeed_if.so uid >= 1000 quiet
 
 # Custom pam_tacplus module which authenticates tacacs user and looks for mapped users
 # in predefined local users list based on tacacs user privilege level
