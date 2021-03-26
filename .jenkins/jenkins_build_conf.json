@@ -22,7 +22,7 @@
 				"libcjose-dev",
 				"rtbrick-json-parser",
 				"rtbrick-json-builder",
-				"rtbrick-libtacplus-map (~= 1\\.0\\.0-xdaily\\.20201125154531\\+Ca1484)"
+				"rtbrick-libtacplus-map"
 			],
 			"build_cmd": ".jenkins/jenkins_build_run_make.sh"
 		}
