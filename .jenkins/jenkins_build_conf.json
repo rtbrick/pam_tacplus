@@ -1,51 +1,54 @@
 {
-    "bionic": {},
-    "onl": {
-        "pkg_group": "rtbrick-rbfs",
-        "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh"
+  "bionic": {},
+  "onl": {
+    "pkg_group": "rtbrick-rbfs",
+    "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh"
+  },
+  "__defaults__": {
+    "project": "rtbrick-libpam-tacplus",
+    "version_mmr": {
+      "major": 1,
+      "minor": 4,
+      "rev": 0,
+      "label": "",
+      "meta": ""
     },
-    "__defaults__": {
-        "project": "rtbrick-libpam-tacplus",
-        "version_mmr": {"major": 1, "minor": 4, "rev": 0, "label": "", "meta": ""},
-
-	"containers": [
-		{
-			"name": "builder",
-			"image": "docker.rtbrick.net/devops/images/rtbrick/ubuntu-bionic-builder:latest",
-			"compile_deps": [
-				"autoconf-archive",
-				"libpam0g-dev",
-				"libpam-cracklib",
-				"libcjose-dev",
-				"rtbrick-json-parser",
-				"rtbrick-json-builder",
-				"rtbrick-libtacplus-map"
-			],
-			"build_commands": [
-			       		"./auto.sh",
-					"./configure",
-					"make clean",
-					"make"
-		       	]
-		}
-	],
-
-        "pkg_script": ".jenkins/jenkins_package_create_deb.sh",
-	"pkg_cont": "builder",
-        "pkg_name": "rtbrick-libpam-tacplus",
-        "pkg_descr": "RtBrick fork of pam_tacplus: extended for full tacacs client solution",
-        "pkg_group": "rtbrick-rbfs",
-        "pkg_deps": [
-		"libpam0g",
-		"libpam-cracklib",
-		"libcjose0",
-		"rtbrick-base-env",
-		"rtbrick-json-parser",
-		"rtbrick-json-builder",
-		"rtbrick-libtacplus-map"
-	],
-	"pkg_services": [ ],
-
-        "upload_script": ".jenkins/jenkins_upload_to_latest_ubuntu_rtbrick-rbfs_bionic_rtbrick-rbfs.sh"
-    }
+    "containers": [
+      {
+        "name": "builder",
+        "image": "docker.rtbrick.net/devops/images/rtbrick/ubuntu-bionic-builder:latest",
+        "compile_deps": [
+          "autoconf-archive",
+          "libpam0g-dev",
+          "libpam-cracklib",
+          "libcjose-dev",
+          "rtbrick-json-parser",
+          "rtbrick-json-builder",
+          "rtbrick-libtacplus-map"
+        ],
+        "build_commands": [
+          "./auto.sh",
+          "./configure",
+          "make clean",
+          "make"
+        ]
+      }
+    ],
+    "pkg_script": ".jenkins/jenkins_package_create_deb.sh",
+    "pkg_cont": "builder",
+    "pkg_name": "rtbrick-libpam-tacplus",
+    "pkg_descr": "RtBrick fork of pam_tacplus: extended for full tacacs client solution",
+    "pkg_group": "rtbrick-rbfs",
+    "pkg_deps": [
+      "libpam0g",
+      "libpam-cracklib",
+      "libcjose0",
+      "rtbrick-base-env",
+      "rtbrick-json-parser",
+      "rtbrick-json-builder",
+      "rtbrick-libtacplus-map"
+    ],
+    "pkg_services": [],
+    "upload_script": ".jenkins/jenkins_upload_to_latest_ubuntu_rtbrick-rbfs_bionic_rtbrick-rbfs.sh"
+  }
 }
