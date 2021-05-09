@@ -1,5 +1,8 @@
 {
-  "bionic": {},
+  "bionic": {
+    "pkg_distribution": "ubuntu",
+    "pkg_release": "bionic"
+  },
   "onl": {
     "pkg_group": "rtbrick-rbfs",
     "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh"
