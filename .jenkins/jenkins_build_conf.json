@@ -4,6 +4,27 @@
     "pkg_release": "bionic"
   },
   "onl": {
+    "containers": [
+      {
+        "name": "builder",
+        "image": "docker.rtbrick.net/devops/images/rtbrick/debian-stretch-builder:latest",
+        "compile_deps": [
+          "autoconf-archive",
+          "libpam0g-dev",
+          "libpam-cracklib",
+          "libcjose-dev",
+          "rtbrick-json-parser",
+          "rtbrick-json-builder",
+          "rtbrick-libtacplus-map"
+        ],
+        "build_commands": [
+          "./auto.sh",
+          "./configure",
+          "make clean",
+          "make"
+        ]
+      }
+    ],
     "pkg_group": "rtbrick-rbfs",
     "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh",
     "pkg_distribution": "debian",
