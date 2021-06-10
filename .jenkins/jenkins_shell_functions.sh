@@ -1212,19 +1212,53 @@ docker_prepare() {
 				local dep="";
 				dep="$(echo "$cont_deps" | $_jq ".[$j]")";
 
-				# Check if this is an rtbrick package dependency or not.
-				echo "$dep" | grep -E '^rtbrick-' 2>/dev/null 1>/dev/null || {
-					# We treat any non rtbrick- packages as passthrough and
-					# will try to install them later with the usual APT tooling.
-					# shellcheck disable=SC2206
-					deps_to_be_installed+=("$dep");
-					echo "$dep" >> "$apt_resolv_log";
-					j="$(( j + 1 ))";
+				# Check if this is an rtbrick package dependency
+				# or not.
+				case "$dep" in
+					*:::rtbrick-*)
+						local pkg_group_override="";
+						pkg_group_override="$(echo "$dep" | sed -E 's/^([^:]+):::(.+)$/\1/g')";
+						dep="$(echo "$dep" | sed -E 's/^([^:]+):::(.+)$/\2/g')";
 
-					continue;
-				}
-	
-				deps_to_be_resolved+=("$dep");
+						if [ -z "$pkg_group_override" ] || [ -z "$dep" ]; then
+							die "In pkg group override case: pkg_group_override='$pkg_group_override' dep='$dep'";
+						fi
+
+						local dep_resolved="";
+						dep_resolved="$($_docker exec						\
+							-e "DEBIAN_FRONTEND=noninteractive"				\
+							-e "GITLAB_TOKEN=${GITLAB_TOKEN:-}"				\
+							-e "BRANCH=$BRANCH"						\
+							-e "BRANCH_SANITIZED=$BRANCH_SANITIZED"				\
+							-e "__jenkins_scripts_dir=${__jenkins_scripts_dir:-./.jenkins}"	\
+							-e "pkg_name=$pkg_name"						\
+							-e "pkg_group=$pkg_group_override"				\
+							-e "pkg_distribution=$pkg_distribution"				\
+							-e "pkg_release=$pkg_release"					\
+							"$dckr_name"							\
+							$apt_resolv_script "--with-dev" "$dep")";
+
+						local d="";
+						for d in $dep_resolved; do
+							logmsg "rtbrick package dependency with pkg group override '$pkg_group_override' resolved to: [$d]"  "docker_prepare";
+							deps_to_be_installed+=("$d");
+							echo "$d" >> "$apt_resolv_log";
+						done
+					;;
+
+					rtbrick-*)
+						deps_to_be_resolved+=("$dep");
+					;;
+
+					*)
+						# We treat any non rtbrick- packages as passthrough and
+						# will try to install them later with the usual APT tooling.
+						# shellcheck disable=SC2206
+						deps_to_be_installed+=("$dep");
+						echo "$dep" >> "$apt_resolv_log";
+					;;
+				esac
+
 				j="$(( j + 1 ))";
 			done
 

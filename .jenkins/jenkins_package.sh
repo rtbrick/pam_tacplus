@@ -152,20 +152,11 @@ echo "$_pkg_descr" > description-pak;
 # all install commands in a variable.
 _pkg_install_cmd="";
 
-# Create new and empty package pre/post install action scripts. NOTE: the
-# presence of spaces in the last 2 paramethers, these are needed due to a
-# current limitation of the pkg_serv_template function.
-pkg_serv_template "$PAK_FILES_LOCATION/preinstall-pak.tpl"	\
-	"preinstall-pak" " " "" "";
-
-pkg_serv_template "$PAK_FILES_LOCATION/postinstall-pak.tpl"	\
-	"postinstall-pak" " " "" "";
-
-pkg_serv_template "$PAK_FILES_LOCATION/preremove-pak.tpl"	\
-	"preremove-pak" " " "" "";
-
-pkg_serv_template "$PAK_FILES_LOCATION/postremove-pak.tpl"	\
-	"postremove-pak" " " "" "";
+# Create placeholder files for package pre/post install action scripts.
+echo -n > "preinstall-pak";
+echo -n > "postinstall-pak";
+echo -n > "preremove-pak";
+echo -n > "postremove-pak";
 
 # Check if the software being packaged is supposed to run as a service and if
 # yes create the necesary systemd service files and configs. NOTE: this only
@@ -235,8 +226,8 @@ if [ -n "$_pkg_srvs" ] && pkg_is_not_dev_dbg; then
 			"$srv_runas_group"			\
 			"$srv_runas_gid"			\
 			"$srv_runas_more_groups";
-		printf "\n\n" >> "preinstall-pak";
 		cat "preinstall-pak.$i" >> "preinstall-pak"; rm "preinstall-pak.$i";
+		printf "\n#---\n" >> "preinstall-pak";
 
 		pkg_serv_template "$PAK_FILES_LOCATION/postinstall-pak.tpl"	\
 			"postinstall-pak.$i"			\
@@ -252,8 +243,8 @@ if [ -n "$_pkg_srvs" ] && pkg_is_not_dev_dbg; then
 			"$srv_runas_group"			\
 			"$srv_runas_gid"			\
 			"$srv_runas_more_groups";
-		printf "\n\n" >> "postinstall-pak";
 		cat "postinstall-pak.$i" >> "postinstall-pak"; rm "postinstall-pak.$i";
+		printf "\n#---\n" >> "postinstall-pak";
 
 		pkg_serv_template "$PAK_FILES_LOCATION/preremove-pak.tpl"	\
 			"preremove-pak.$i"			\
@@ -269,8 +260,8 @@ if [ -n "$_pkg_srvs" ] && pkg_is_not_dev_dbg; then
 			"$srv_runas_group"			\
 			"$srv_runas_gid"			\
 			"$srv_runas_more_groups";
-		printf "\n\n" >> "preremove-pak";
 		cat "preremove-pak.$i" >> "preremove-pak"; rm "preremove-pak.$i";
+		printf "\n#---\n" >> "preremove-pak";
 
 		pkg_serv_template "$PAK_FILES_LOCATION/postremove-pak.tpl"	\
 			"postremove-pak.$i"			\
@@ -286,11 +277,26 @@ if [ -n "$_pkg_srvs" ] && pkg_is_not_dev_dbg; then
 			"$srv_runas_group"			\
 			"$srv_runas_gid"			\
 			"$srv_runas_more_groups";
-		printf "\n\n" >> "postremove-pak";
 		cat "postremove-pak.$i" >> "postremove-pak"; rm "postremove-pak.$i";
+		printf "\n#---\n" >> "postremove-pak";
 
 		i="$(( i + 1 ))";
 	done
+else
+	# Create new and empty package pre/post install action scripts. NOTE:
+	# the presence of spaces in the last 2 paramethers, these are needed
+	# due to a current limitation of the pkg_serv_template function.
+	pkg_serv_template "$PAK_FILES_LOCATION/preinstall-pak.tpl"	\
+		"preinstall-pak" " " "" "";
+
+	pkg_serv_template "$PAK_FILES_LOCATION/postinstall-pak.tpl"	\
+		"postinstall-pak" " " "" "";
+
+	pkg_serv_template "$PAK_FILES_LOCATION/preremove-pak.tpl"	\
+		"preremove-pak" " " "" "";
+
+	pkg_serv_template "$PAK_FILES_LOCATION/postremove-pak.tpl"	\
+		"postremove-pak" " " "" "";
 fi
 
 # Generate software versions.

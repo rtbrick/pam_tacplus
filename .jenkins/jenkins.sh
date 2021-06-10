@@ -649,6 +649,7 @@ while [ "$i" -lt "$build_steps_len" ] && [ "$skip_build_steps" -eq "0" ]; do
 			-e "ver_mmr=$ver_mmr"				\
 			-e "ver_str=$ver_str"				\
 			-e "__global_debug=$__global_debug"		\
+			-e "GITLAB_TOKEN=$GITLAB_TOKEN"			\
 			-e "BRANCH=$BRANCH"				\
 			-e "BRANCH_SANITIZED=$BRANCH_SANITIZED"		\
 			-e "GIT_COMMIT=$GIT_COMMIT"			\
@@ -812,6 +813,7 @@ if [ -n "$upload_script" ]; then
 				-e "ver_mmr=$ver_mmr"			\
 				-e "ver_str=$ver_str"			\
 				-e "__global_debug=$__global_debug"	\
+				-e "GITLAB_TOKEN=$GITLAB_TOKEN"		\
 				-e "BRANCH=$BRANCH"			\
 				-e "GIT_COMMIT=$GIT_COMMIT"		\
 				-e "GIT_COMMIT_TS=$GIT_COMMIT_TS"	\

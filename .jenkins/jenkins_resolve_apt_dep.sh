@@ -61,4 +61,5 @@ $_rtb_itool pkg resolve --as-deb-dep --bubble --latest	\
 	--version "$BRANCH_SANITIZED"			\
 	--pkg-distribution "$pkg_distribution"		\
 	--pkg-release "$pkg_release"			\
+	--pkg-group "$pkg_group"			\
 	"$@";

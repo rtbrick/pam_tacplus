@@ -10,6 +10,14 @@ ldconfig;
 # running on. This might have already been set.
 _codename="${_codename:-$(/usr/bin/lsb_release -s -c || echo 'unknown')}";
 
+# Find out how this script is being called. See man 5 deb-postinst.
+# If action == "configure" and param1 is empty then this is the initial
+# installation of a package, if param1 is not empty then it should contain
+# old-version meaning it's an upgrade of an already installed package.
+_deb_script_name="$0";
+_deb_action="${1:-}";
+_deb_param1="${2:-}";
+
 # Enable and start package service if needed.
 # shellcheck disable=SC2050
 if [ "__{{ .ServiceName }}" != "__" ] && [ "__{{ .ServiceName }}" != "__ " ]; then
