@@ -25,10 +25,10 @@
         ]
       }
     ],
-    "pkg_group": "rtbrick-rbfs",
-    "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh",
+    "pkg_group": "rtbrick-onl",
     "pkg_distribution": "debian",
-    "pkg_release": "stretch"
+    "pkg_release": "stretch",
+    "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh"
   },
   "__defaults__": {
     "project": "rtbrick-libpam-tacplus",
