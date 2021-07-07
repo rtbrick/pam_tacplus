@@ -27,6 +27,10 @@ session	required			pam_permit.so
 session optional			pam_umask.so
 # and here are more per-package modules (the "Additional" block)
 session	[default=1 success=ignore] pam_succeed_if.so uid >= 1000 quiet
+# No tacacs lookup for users: rtbrick-ctrld and apigwd
+auth	[default=1 success=ignore] pam_succeed_if.so uid != 8001 quiet
+auth	[default=1 success=ignore] pam_succeed_if.so uid != 8002 quiet
+
 session	required	pam_unix.so 
 session	optional	pam_systemd.so 
 # end of pam-auth-update config#
