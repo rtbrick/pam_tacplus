@@ -26,7 +26,7 @@ session	required			pam_permit.so
 # See "man pam_umask".
 session optional			pam_umask.so
 # and here are more per-package modules (the "Additional" block)
-# No tacacs lookup for users: rtbrick-ctrld and apigwd
+# No tacacs lookup for users: supervisor, rtbrick-ctrld and apigwd
 session    [default=1 success=ignore] pam_succeed_if.so quiet uid >= 1000 uid notin 8001:8002
 
 session	required	pam_unix.so 

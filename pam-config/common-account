@@ -18,7 +18,7 @@ account required    pam_tally2.so
 
 
 # here are the per-package modules (the "Primary" block)
-# No tacacs lookup for users: rtbrick-ctrld and apigwd
+# No tacacs lookup for users: supervisor, rtbrick-ctrld and apigwd
 account        [default=1 success=ignore] pam_succeed_if.so quiet uid >= 1000 uid notin 8001:8002
 
 # Custom pam_tacplus module which authenticates tacacs user and looks for mapped users
