@@ -1,27 +1,21 @@
 {
- "supervisor":{
-     "priority": 1,
-     "rtb-allow-cmds": [
-	     ".*"
-     ]
-   },
- "operator":{
-     "priority": 2,
-     "rtb-allow-cmds": [
-	     ".*"
-     ]
-   },
- "reader":{
-     "priority": 3,
-     "rtb-deny-cmds": [
-	     "switch-mode config",
-         "start shell"
-     ]
-   },
- "default":{
-     "priority": 100,
-     "rtb-deny-cmds": [
-         ".*"
-     ]
-   }
+    "supervisor":{
+        "priority": 1
+    },
+    "operator":{
+        "priority": 2
+    },
+    "reader":{
+        "priority": 3,
+        "rtb-deny-cmds": [
+            "switch-mode config",
+            "start shell"
+        ]
+    },
+    "default":{
+        "priority": 100,
+        "rtb-deny-cmds": [
+            ".*"
+        ]
+    }
 }
