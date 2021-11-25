@@ -7,7 +7,7 @@
     "containers": [
       {
         "name": "builder",
-        "image": "docker.rtbrick.net/devops/images/rtbrick/debian-stretch-builder:latest",
+        "image": "docker.rtbrick.net/devops/images/rtbrick/debian-stretch-builder",
         "compile_deps": [
           "autoconf-archive",
           "libpam0g-dev",
@@ -42,7 +42,7 @@
     "containers": [
       {
         "name": "builder",
-        "image": "docker.rtbrick.net/devops/images/rtbrick/ubuntu-bionic-builder:latest",
+        "image": "docker.rtbrick.net/devops/images/rtbrick/ubuntu-bionic-builder",
         "compile_deps": [
           "autoconf-archive",
           "libpam0g-dev",
