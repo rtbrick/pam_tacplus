@@ -41,16 +41,13 @@ trap 'trap_debug "$?" "$BASH_COMMAND" "$LINENO" "${BASH_SOURCE[0]}"' ERR;
 # Dependencies on other programs which might not be installed. Here we rely on
 # values discovered and passed on by the calling script.
 # shellcheck disable=SC2269
-_jq="$_jq";
-
-ME="jenkins_package.sh";	# Useful for log messages.
-
-# Dependencies on other programs which might not be installed. If any of these
-# are missing the script will exit here with an error.
-_jq="$(which jq) -er";
 _checkinstall="$(which checkinstall)";
 _dpkg="$(which dpkg)";
+_jq="${_jq:-$(which jq) -er}";
 _lsb_release="$(which lsb_release)";
+_rtb_itool="$(which rtb-itool)";
+
+ME="jenkins_package.sh";	# Useful for log messages.
 
 # TODO: These are hard-coded values for now. Change them to be part of the
 # build conf JSON file.
@@ -89,23 +86,24 @@ pkg_is_not_dev_dbg() {
 	return "${_pkg_is_not_dev_dbg}";
 }
 
+apt_resolv_log="apt_resolv.log";
+[ -d "${__jenkins_scripts_dir:-./.jenkins}" ]	\
+	&& apt_resolv_log="${__jenkins_scripts_dir:-./.jenkins}/${apt_resolv_log}";
+
+apt_resolv_log_per_cont="${apt_resolv_log}.${DEFAULT_STEP_CONT}";
+
 # Transform the JSON list of dependencies into a comma separated list. This
 # happens only for packages different than -dev or -dbg (detected via
 # pkg_suffix, where pkg_suffix might also be empty).
 _pkg_requires="";
 if [ -n "$_pkg_deps" ] && pkg_is_not_dev_dbg; then
-	apt_resolv_log="apt_resolv.log";
-	[ -d "${__jenkins_scripts_dir:-./.jenkins}" ]	\
-		&& apt_resolv_log="${__jenkins_scripts_dir:-./.jenkins}/${apt_resolv_log}";
-	[ ! -f "$apt_resolv_log" ] && apt_resolv_log="";
-
 	_pkg_deps_len="$(echo "$_pkg_deps" | $_jq '. | length')";
 	i="0";
 	while [ "$i" -lt "$_pkg_deps_len" ]; do
 		dep="$(echo "$_pkg_deps" | $_jq ".[$i]")";
 		dep_from_compile="";
-		[ -n "$apt_resolv_log" ] && [ -n "$_pkg_deps_exact" ] && [ "$_pkg_deps_exact" == "true" ] && {
-			dep_from_compile="$(grep -E "^$dep=" "$apt_resolv_log" 2>/dev/null || true)";
+		[ -n "$apt_resolv_log_per_cont" ] && [ -n "$_pkg_deps_exact" ] && [ "$_pkg_deps_exact" == "true" ] && {
+			dep_from_compile="$(grep -E "^$dep=" "$apt_resolv_log_per_cont" 2>/dev/null || true)";
 			[ -n "$dep_from_compile" ] && {
 				# https://stackoverflow.com/questions/18365600/how-to-manage-multiple-package-dependencies-with-checkinstall
 				# dep_from_compile="$(echo "$dep_from_compile" | sed -E 's/^(.*)=(.*)$/\1 \\(= \2\\)/g')";
@@ -129,23 +127,22 @@ cp "$PAK_FILES_LOCATION"/*-pak ./ || true;
 
 # Generate description-pak
 _git_clone_log="${__jenkins_scripts_dir:-./.jenkins}/git_clone_update.log";
-echo "$_pkg_descr" > description-pak;
-{
-	echo "";
-	echo "rtbrick_package_properties:";
-	echo "    version: $_ver_str";
-	echo "    branch: $BRANCH";
-	echo "    commit: $GIT_COMMIT";
-	echo "    commit_timestamp: $GIT_COMMIT_TS";
-	echo "    commit_date: $GIT_COMMIT_DATE";
-	echo "    build_timestamp: $_build_ts";
-	echo "    build_date: $_build_date";
-	echo "    build_job_hash: $_build_job_hash";
-	if [ -f "$_git_clone_log" ]; then
-		echo "    git_dependencies:";
-		cat "$_git_clone_log";
-	fi
-} >> description-pak;
+if [ ! -f "$_git_clone_log" ]; then
+  _git_clone_log=""
+fi
+
+$_rtb_itool pkg struct gen						\
+	--description "$_pkg_descr"					\
+	--version "$_ver_str"						\
+	--branch "$BRANCH"						\
+	--commit "$GIT_COMMIT"						\
+	--commit_timestamp "$GIT_COMMIT_TS"				\
+	--commit_date "$GIT_COMMIT_DATE"				\
+	--build_timestamp "$_build_ts"					\
+	--build_date "$_build_date"					\
+	--build_job_hash "$_build_job_hash"				\
+	--git_dependencies "$_git_clone_log"				\
+	--dependencies "$apt_resolv_log_per_cont" > description-pak;
 
 # Apart from running `make install` we might need to install some dynamically
 # generated files, like systemd services and/or config files. We will gather
@@ -158,6 +155,12 @@ echo -n > "postinstall-pak";
 echo -n > "preremove-pak";
 echo -n > "postremove-pak";
 
+# Templates for package pre/post install scripts (*-pak) need to run at least
+# once for every package. However the logic gets more complex due to the
+# presence or absence of package services in which case the templates need to
+# run once for each define service.
+pak_tmpl_runs="0";
+
 # Check if the software being packaged is supposed to run as a service and if
 # yes create the necesary systemd service files and configs. NOTE: this only
 # works for systemd based distributions (>= Ubuntu 18.04/bionic) and only
@@ -166,6 +169,8 @@ if [ -n "$_pkg_srvs" ] && pkg_is_not_dev_dbg; then
 	_pkg_srvs_len="$(echo "$_pkg_srvs" | $_jq '. | length')";
 	i="0";
 	while [ "$i" -lt "$_pkg_srvs_len" ]; do
+		logmsg "Processing package pre/post install action templates for package service #$i ..." "$ME";
+
 		curr_srv_val="$(get_arr_idx "$_pkg_srvs" "$i")";
 
 		srv_systemd_template="$(get_dict_key "$curr_srv_val" "systemd_template" || true)";
@@ -280,12 +285,17 @@ if [ -n "$_pkg_srvs" ] && pkg_is_not_dev_dbg; then
 		cat "postremove-pak.$i" >> "postremove-pak"; rm "postremove-pak.$i";
 		printf "\n#---\n" >> "postremove-pak";
 
+		pak_tmpl_runs="$(( pak_tmpl_runs + 1))";
 		i="$(( i + 1 ))";
 	done
-else
+fi
+
+if [ "$pak_tmpl_runs" -lt "1" ]; then
 	# Create new and empty package pre/post install action scripts. NOTE:
 	# the presence of spaces in the last 2 paramethers, these are needed
 	# due to a current limitation of the pkg_serv_template function.
+	logmsg "Creating empty package pre/post install action scripts" "$ME";
+
 	pkg_serv_template "$PAK_FILES_LOCATION/preinstall-pak.tpl"	\
 		"preinstall-pak" " " "" "";
 
@@ -333,7 +343,7 @@ if [ -z "$_pkg_sw_ver_skip" ] && pkg_is_not_dev_dbg; then
 	done
 fi
 
-# Install addional scripts inside the package
+# Install additional scripts inside the package
 if pkg_is_not_dev_dbg; then
 	for f in $(find "${SCRIPTS_LOCATION}/" -type f -iname '*.sh' 2>/dev/null || true); do
 		_pkg_install_cmd+=" install -o root -g root -m 0755 -D -t ${SCRIPTS_INSTALL_DEST}/ $f;";
@@ -355,6 +365,7 @@ checkinstall_pkg_name="$_pkg_name";
 declare -a _checkinstall_args=("--type=debian"			\
 	"--backup=no" "-y" "--nodoc" 				\
 	"--install=no" "--deldesc=yes"				\
+	"--strip=no" "--stripso=no"				\
 	"--pkgarch=$rel_arch" "--pkggroup=$_pkg_group"		\
 	"--maintainer=$_pkg_maintainer"				\
 	"--pkglicense=$_pkg_license"				\
