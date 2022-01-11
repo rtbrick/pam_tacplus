@@ -55,7 +55,7 @@ session [success=ok ignore=ignore module_unknown=ignore default=bad] pam_selinux
 # This module parses environment configuration file(s)
 # and also allows you to use an extended config
 # file /etc/security/pam_env.conf.
-# 
+#
 # parsing /etc/environment needs "readenv=1"
 session       required   pam_env.so readenv=1
 # locale variables are also kept into /etc/default/locale in etch
@@ -98,11 +98,11 @@ session    optional   pam_lastlog.so
 # session    optional   pam_motd.so noupdate
 
 # Prints the status of the user's mailbox upon successful login
-# (Replaces the `MAIL_CHECK_ENAB' option from login.defs). 
+# (Replaces the `MAIL_CHECK_ENAB' option from login.defs).
 #
 # This also defines the MAIL environment variable
 # However, userdel also needs MAIL_DIR and MAIL_FILE variables
-# in /etc/login.defs to make sure that removing a user 
+# in /etc/login.defs to make sure that removing a user
 # also removes the user's mail spool file.
 # See comments in /etc/login.defs
 session    optional   pam_mail.so standard
@@ -114,3 +114,11 @@ session    optional   pam_keyinit.so force revoke
 @include common-account
 @include common-session
 @include common-password
+
+# Custom pam_tacplus module which creates JWT token upon creating user login
+# session Json Web Key file : /var/rtbrick/auth/secrets_jwks.json and
+# Json Web Token Claims file : /var/rtbrick/auth/jwt_claims.json should be
+# defined for Json Web Token generation
+# Note: Make sure pam_tacplus.so is available either at /lib/x86_64-linux-gnu/security/
+# or /lib/security/ path
+session	[authinfo_unavail=ignore success=ok default=ignore] pam_tacplus.so include=/etc/tacplus_servers login=login protocol=login service=shell debug=1
