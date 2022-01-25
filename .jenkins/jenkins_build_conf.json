@@ -63,7 +63,7 @@
     "pkg_script": ".jenkins/jenkins_package_create_deb.sh",
     "pkg_cont": "builder",
     "pkg_name": "rtbrick-libpam-tacplus",
-    "pkg_descr": "RtBrick fork of pam_tacplus: extended for full tacacs client solution",
+    "pkg_descr": "RtBrick fork of pam_tacplus - extended for full tacacs client solution",
     "pkg_group": "rtbrick-rbfs",
     "pkg_deps": [
       "libpam0g",
