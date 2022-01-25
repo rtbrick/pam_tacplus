@@ -60,7 +60,24 @@
         ]
       }
     ],
-    "pkg_script": ".jenkins/jenkins_package_create_deb.sh",
+    "pkg_commands": [
+      "mkdir -p /usr/local/share/doc",
+      "mkdir -p /usr/share/rtbrick/",
+      "mkdir -p /usr/share/rtbrick/tacplus/",
+      "mkdir -p /usr/share/rtbrick/tacplus/etc/pam.d/",
+      "mkdir -p /usr/share/rtbrick/tacplus/etc/security/",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/ jwt-config/jwt_claims.json",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/ jwt-config/rbac_role_rtb_cmds.json",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-account",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-auth",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-password",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-session",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/common-session-noninteractive",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/sshd",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/pam.d/ pam-config/login",
+      "install -o root -g root -m 0640 -D -t /usr/share/rtbrick/tacplus/etc/security/ pam-config/etc/security/group.conf",
+      "make \"app_ver=$_ver_str\" install"
+    ],
     "pkg_cont": "builder",
     "pkg_name": "rtbrick-libpam-tacplus",
     "pkg_descr": "RtBrick fork of pam_tacplus - extended for full tacacs client solution",
