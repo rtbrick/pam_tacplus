@@ -148,6 +148,12 @@ DEFAULT_SONAR_SCRIPT="${__jenkins_scripts_dir:-./.jenkins}/jenkins_sonarqube.sh"
 # package, test, upload will run if a specific container for them is not
 # defined in build_conf through a variable like `pkg_cont`.
 DEFAULT_STEP_CONT="builder";
+# SONAR_SCAN_CONT is the container inside which the sonar-scanner will be run,
+# IF the current build config asks for SonarQube analysis (by having a `sonar`
+# section) AND IF this container exists. IF this container DOESN'T exist but
+# the build config asks for SonarQube analysis then sonar-scanner will be run
+# inside of DEFAULT_STEP_CONT.
+SONAR_SCAN_CONT="sonar";
 #
 # RTB_ITOOL_CONFIG is the location of the rtb-itool configuration file. It is
 # used to load the GITLAB_TOKEN in the environment if needed.
@@ -337,6 +343,8 @@ get_conf_key "$build_name" 1>/dev/null || {
 		test)
 			;;
 		upload)
+			;;
+		sonar)
 			;;
 		*)
 			>&2 echo "'$highlevel_step' is not a valid option for the high level build step.";
@@ -909,35 +917,50 @@ fi
 prom_update_duration "duration_upload";
 
 prom_add_duration "duration_sonarqube" "Duration of the SonarQube step in seconds." "step=\"sonarqube\"" "";
-# Run the SonarQube step.
+# Run the SonarQube step. The sonar script will be run inside of a container named $SONAR_SCAN_CONT
+# if such a container exists (hence is part of the configuration) or inside the DEFAULT_STEP_CONT
+# which is usually the `builder` container.
 if [ -n "$sonar_conf" ] && [ "$sonar_conf" != "{}" ]; then
-	if [ -z "$highlevel_step" ] || [ "_$highlevel_step" == "_sonarqube" ]; then
+	if [ -z "$highlevel_step" ] || [ "_$highlevel_step" == "_sonar" ]; then
 		if [ -n "$sonar_token" ]; then
-			logmsg "Running SonarQube step inside container '$dckr_name'" "$ME";
-		    $_docker_exec \
-				-e "build_name=$build_name" \
-				-e "build_conf=$build_conf" \
-				-e "dckr_name=$dckr_name" \
-				-e "local_build=$local_build" \
-				-e "proj=$proj" \
-				-e "build_ts=$build_ts" \
-				-e "build_date=$build_date" \
-				-e "build_job_hash=$build_job_hash" \
-				-e "ver_mmr=$ver_mmr" \
-				-e "ver_str=$ver_str" \
-				-e "__global_debug=$__global_debug" \
-				-e "BRANCH=$BRANCH" \
-				-e "SONARQUBE_TOKEN=$SONARQUBE_TOKEN" \
-				-e "GIT_COMMIT=$GIT_COMMIT" \
-				-e "GIT_COMMIT_TS=$GIT_COMMIT_TS" \
-				-e "GIT_COMMIT_DATE=$GIT_COMMIT_DATE" \
-				-e "sonar_conf=$sonar_conf" \
-				-e "sonar_version=$_short_commit" \
-				-e "gitlabActionType=${gitlabActionType:-}" \
-				-e "gitlabMergeRequestIid=${gitlabMergeRequestIid:-}" \
-				-e "gitlabSourceBranch=${gitlabSourceBranch:-}" \
-				-e "gitlabTargetBranch=${gitlabTargetBranch:-}" \
-    				"$dckr_name" \
+			sonar_scan_cont_name="${dckr_name:-}";
+			try_sonar_cont_name="$(echo "${build_job_hash}_${proj}_${SONAR_SCAN_CONT}"	\
+						| sed -E "s/$DOCKER_SANITIZER/_/g")";
+			$_docker inspect "$try_sonar_cont_name" 1>/dev/null 2>/dev/null &&		\
+				sonar_scan_cont_name="$try_sonar_cont_name";
+
+			# If sonar_scan_cont_name is empty we might be running just the `sonar` high
+			# level step and at the same time not have a specific sonar container.
+			[ -z "$sonar_scan_cont_name" ] && {
+				sonar_scan_cont_name="$(echo "${build_job_hash}_${proj}_${DEFAULT_STEP_CONT}"	\
+						| sed -E "s/$DOCKER_SANITIZER/_/g")";
+			}
+
+			logmsg "Running SonarQube step inside container '$sonar_scan_cont_name'" "$ME";
+			$_docker_exec							\
+				-e "build_name=$build_name"				\
+				-e "build_conf=$build_conf"				\
+				-e "dckr_name=$sonar_scan_cont_name"			\
+				-e "local_build=$local_build"				\
+				-e "proj=$proj"						\
+				-e "build_ts=$build_ts"					\
+				-e "build_date=$build_date"				\
+				-e "build_job_hash=$build_job_hash"			\
+				-e "ver_mmr=$ver_mmr"					\
+				-e "ver_str=$ver_str"					\
+				-e "__global_debug=$__global_debug"			\
+				-e "BRANCH=$BRANCH"					\
+				-e "SONARQUBE_TOKEN=$SONARQUBE_TOKEN"			\
+				-e "GIT_COMMIT=$GIT_COMMIT"				\
+				-e "GIT_COMMIT_TS=$GIT_COMMIT_TS"			\
+				-e "GIT_COMMIT_DATE=$GIT_COMMIT_DATE"			\
+				-e "sonar_conf=$sonar_conf"				\
+				-e "sonar_version=$_short_commit"			\
+				-e "gitlabActionType=${gitlabActionType:-}"		\
+				-e "gitlabMergeRequestIid=${gitlabMergeRequestIid:-}"	\
+				-e "gitlabSourceBranch=${gitlabSourceBranch:-}"		\
+				-e "gitlabTargetBranch=${gitlabTargetBranch:-}"		\
+				"$sonar_scan_cont_name"					\
 				/bin/sh -c -- "$sonar_script";
 		else
 			warnmsg "SONARQUBE_TOKEN is not set, skipping SonarQube high level step" "$ME";
