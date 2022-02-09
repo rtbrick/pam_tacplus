@@ -8,8 +8,18 @@
     "reader":{
         "priority": 3,
         "rtb-deny-cmds": [
-            "switch-mode config",
-            "start shell"
+            ".*"
+        ],
+        "rtb-allow-cmds": [
+            "color.*",
+            "date.*",
+            "exit.*",
+            "history.*",
+            "paging.*",
+            "ping.*",
+            "show.*",
+            "traceroute.*",
+            "watch-mode.*"
         ]
     },
     "default":{
