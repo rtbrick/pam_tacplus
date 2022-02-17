@@ -22,13 +22,13 @@
           "./configure",
           "make clean",
           "make"
-        ]
+        ],
+        "compile_deps_with_dev": true
       }
     ],
     "pkg_group": "rtbrick-onl",
     "pkg_distribution": "debian",
-    "pkg_release": "stretch",
-    "upload_script": ".jenkins/jenkins_upload_to_latest_debian_rtbrick-onl_stretch_rtbrick-onl.sh"
+    "pkg_release": "stretch"
   },
   "__defaults__": {
     "project": "rtbrick-libpam-tacplus",
@@ -57,7 +57,8 @@
           "./configure",
           "make clean",
           "make"
-        ]
+        ],
+        "compile_deps_with_dev": true
       }
     ],
     "pkg_commands": [
@@ -92,7 +93,6 @@
       "rtbrick-json-builder",
       "rtbrick-libtacplus-map"
     ],
-    "pkg_services": [],
-    "upload_script": ".jenkins/jenkins_upload_to_latest_ubuntu_rtbrick-rbfs_bionic_rtbrick-rbfs.sh"
+    "pkg_services": []
   }
 }
