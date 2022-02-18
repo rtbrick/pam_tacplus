@@ -206,62 +206,51 @@ jwt_util_create_custom_header(pam_handle_t *pamh, json_value *header)
     return hdr;
 }
 
-char *
-jwt_util_get_role(char *roles, json_value *value)
+/*
+ * jwt_util_populate_cmds
+ * Populate commands buffer with list of commands present in
+ * rtb_cmds array delimited by ';'
+ *
+ * @input:
+ *  rtb_cmds      : JSON array
+ *  commands      : String pointer to concatenates
+ * @return
+ *  true          : If atleast one command were present in rtb_cmds array
+ *  false         : If rtb_cmds array was empty
+ */
+static bool inline
+jwt_util_populate_cmds(json_value  *rtb_cmds, char *commands)
 {
-    uint16_t    top_priority = ROLE_DEFAULT_PRIORITY;
-    json_value  *priority    = NULL,
-                *jval_role   = NULL;
-    char        *role        = NULL;
+    uint16_t    length;
+    char        *cmd         = NULL;
+    char        *delimiter   = ";";
+    bool        ret          = false;
 
-    if (NULL == roles && NULL == value) {
-        /* return default role_name */ 
-        return ROLES_DEFAULT_ROLE_NAME;
+    if(!rtb_cmds) {
+        return false;
     }
-    /* Returns first token */
-    char* token = strtok(roles, ROLES_TOKEN_DELIMITER);
-
-    /* tokens are delimeted by " " */
-    while (token != NULL) {
-        jval_role = json_get(value, json_object, token);
-        if(!jval_role) {
-            _pam_log(LOG_ERR,
-                    "token creation- Failed to read (role : %s) field from json file %s",
-                    token,
-                    JWT_RBAC_RTB_CMDS_FILE);
-            goto NEXT_ROLE;
-        }
-        priority = json_get(jval_role, json_integer, "priority");
-        if (priority) {
-            if (top_priority > JSON_INT(priority)) {
-                top_priority = JSON_INT(priority);
-                role = token;
-            }
-        }
-    NEXT_ROLE:
-        token = strtok(NULL, ROLES_TOKEN_DELIMITER);
+    length = JSON_ARRAY_LEN(rtb_cmds);
+    for (uint16_t idx = 0; idx < length; idx++) {
+        cmd = JSON_ARRAY_STRING(rtb_cmds, idx);
+        strcat(commands, cmd);
+        strcat(commands, delimiter);
+        ret = true;
     }
-    if (ROLE_DEFAULT_PRIORITY == top_priority) {
-        /* return role as default */ 
-        return ROLES_DEFAULT_ROLE_NAME;
-    }
-    return role;
+    return ret;
 }
 
 bool
 jwt_util_set_role_default_cmds(const char *roles, char *commands, uint8_t cmd_type)
 {
 
-    uint16_t    length,
-                idx;
-    bool        ret          = true;
-    json_value  *root        = NULL,
-                *role        = NULL,
-                *rtb_cmds    = NULL;
-    char        *delimiter   = ";",
-                *cmd         = NULL,
-                *role_name   = NULL,
-                *tmp_roles   = NULL;
+    uint16_t    idx;
+    bool        ret          = false;
+    json_value  *root        = NULL;
+    json_value  *jval_role   = NULL;
+    json_value  *rtb_cmds    = NULL;
+    char        *cmd         = NULL;
+    char        *tmp_roles   = NULL;
+    char        *token       = NULL;
 
     root = jwt_util_json_parse_file(JWT_RBAC_RTB_CMDS_FILE);
     if(!root) {
@@ -271,66 +260,38 @@ jwt_util_set_role_default_cmds(const char *roles, char *commands, uint8_t cmd_ty
         return false;
     }
     tmp_roles = strdup(roles);
-    role_name = jwt_util_get_role(tmp_roles, root);
-    role = json_get(root, json_object, role_name);
-    if(!role) {
-        _pam_log(LOG_DEBUG,
-                "token creation- Failed to read (role : %s) field from json file %s",
-                role_name,
-                JWT_RBAC_RTB_CMDS_FILE);
-        ret = false;
-        goto done;
-    }
-    switch(cmd_type) {
 
-        case JWT_RTB_CMD_ALLOW:
-            rtb_cmds = json_get(role, json_array, "rtb-allow-cmds");
-            if(!rtb_cmds) {
-                _pam_log(LOG_DEBUG,
-                         "token creation- Failed to allow-cmds for role : %s field from json file %s",
-                         role_name,
-                         JWT_RBAC_RTB_CMDS_FILE);
-                ret = false;
-                goto done;
+    /* Returns first token */
+    token = strtok(tmp_roles, ROLES_TOKEN_DELIMITER);
+
+    /*
+     * Walk through all the roles and append the allow/deny commands
+     * to commands buffer if allow/deny commands is present in rbac file
+     */
+    while (token != NULL) {
+        jval_role = json_get(root, json_object, token);
+        if(jval_role) {
+            switch(cmd_type) {
+                case JWT_RTB_CMD_ALLOW:
+                    rtb_cmds = json_get(jval_role, json_array, "allow-cmds");
+                    break;
+                case JWT_RTB_CMD_DENY:
+                    rtb_cmds = json_get(jval_role, json_array, "deny-cmds");
+                    break;
+                default:
+                    break;
             }
-            break;
-
-        case JWT_RTB_CMD_DENY:
-            rtb_cmds = json_get(role, json_array, "rtb-deny-cmds");
-            if(!rtb_cmds) {
-                _pam_log(LOG_DEBUG,
-                        "token creation- Failed to deny-cmds for role : %s field from json file %s",
-                        role_name,
-                        JWT_RBAC_RTB_CMDS_FILE);
-                ret = false;
-                goto done;
+            if(jwt_util_populate_cmds(rtb_cmds, commands)) {
+                ret = true;
             }
-            break;
-
-        default:
-            ret = false;
-            goto done;
+        }
+        token = strtok(NULL, ROLES_TOKEN_DELIMITER);
+        rtb_cmds = NULL;
     }
 
-    /* Populate commands buffer with list of commands delimited by ';' */
-    length = JSON_ARRAY_LEN(rtb_cmds);
-    if(length < 1) {
-        ret = false;
-        goto done;
-    }
-    for (idx = 0; idx < length; idx++) {
-
-        cmd = JSON_ARRAY_STRING(rtb_cmds, idx);
-        strcat(commands, cmd);
-        strcat(commands, delimiter);
-    }
-
-done:
-    /*Free read json value */
     json_value_free(root);
     free(tmp_roles);
     return ret;
-
 }
 
 uint16_t
