@@ -16,6 +16,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define DEFAULT_ROLE   "default"
 typedef enum jwt_rtb_cmd_type_t {
     JWT_RTB_CMD_ALLOW = 0,
     JWT_RTB_CMD_DENY,
@@ -239,15 +240,29 @@ jwt_util_populate_cmds(json_value  *rtb_cmds, char *commands)
     return ret;
 }
 
+json_value*
+jwt_util_get_role_cmds(json_value *jval_role, uint8_t cmd_type)
+{
+    switch(cmd_type) {
+        case JWT_RTB_CMD_ALLOW:
+            return json_get(jval_role, json_array, "allow-cmds");
+        case JWT_RTB_CMD_DENY:
+            return json_get(jval_role, json_array, "deny-cmds");
+        default:
+            return NULL;
+    }
+}
+
 bool
 jwt_util_set_role_default_cmds(const char *roles, char *commands, uint8_t cmd_type)
 {
 
     uint16_t    idx;
     bool        ret          = false;
+    bool        role_found   = false;
     json_value  *root        = NULL;
-    json_value  *jval_role   = NULL;
     json_value  *rtb_cmds    = NULL;
+    json_value  *jval_role   = NULL;
     char        *cmd         = NULL;
     char        *tmp_roles   = NULL;
     char        *token       = NULL;
@@ -271,16 +286,8 @@ jwt_util_set_role_default_cmds(const char *roles, char *commands, uint8_t cmd_ty
     while (token != NULL) {
         jval_role = json_get(root, json_object, token);
         if(jval_role) {
-            switch(cmd_type) {
-                case JWT_RTB_CMD_ALLOW:
-                    rtb_cmds = json_get(jval_role, json_array, "allow-cmds");
-                    break;
-                case JWT_RTB_CMD_DENY:
-                    rtb_cmds = json_get(jval_role, json_array, "deny-cmds");
-                    break;
-                default:
-                    break;
-            }
+            role_found = true;
+            rtb_cmds = jwt_util_get_role_cmds(jval_role, cmd_type);
             if(jwt_util_populate_cmds(rtb_cmds, commands)) {
                 ret = true;
             }
@@ -289,6 +296,16 @@ jwt_util_set_role_default_cmds(const char *roles, char *commands, uint8_t cmd_ty
         rtb_cmds = NULL;
     }
 
+    /* If role is not defined in rbac file then add default role permissions */
+    if (!role_found) {
+        jval_role = json_get(root, json_object, DEFAULT_ROLE);
+        if(jval_role) {
+            rtb_cmds = jwt_util_get_role_cmds(jval_role, cmd_type);
+            if(jwt_util_populate_cmds(rtb_cmds, commands)) {
+                ret = true;
+            }
+        }
+    }
     json_value_free(root);
     free(tmp_roles);
     return ret;
