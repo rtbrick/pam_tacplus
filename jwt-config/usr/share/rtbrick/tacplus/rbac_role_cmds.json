@@ -2,6 +2,9 @@
     "supervisor":{
     },
     "operator":{
+        "deny-cmds": [
+            "reboot.*"
+        ]
     },
     "reader":{
         "deny-cmds": [
